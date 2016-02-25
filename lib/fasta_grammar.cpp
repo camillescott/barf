@@ -1,80 +1,60 @@
+#define BOOST_SPIRIT_DEBUG
 #include <iostream>
 #include <string>
 #include <vector>
+#include <utility>
 
-#include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
-#include <boost/fusion/include/io.hpp>
-
+#include <boost/spirit/include/qi_skip.hpp>
 #include "common.hpp"
 
 namespace barf {
 
-    namespace qi = boost::spirit::qi;
-    namespace ascii = boost::spirit::ascii;
+    typedef std::pair<std::string, std::string> FastaRecord;
+    typedef std::vector<FastaRecord> FastaVector;
 
-    struct fasta_record {
-        std::string header;
-        std::string sequence;
-    };
-
-}
-
-BOOST_FUSION_ADAPT_STRUCT(
-    barf::fasta_record,
-    (std::string, header)
-    (std::string, sequence)
-)
-
-namespace barf {
-
-    template <typename Iterator, typename Skipper>
-    struct fasta_parser : qi::grammar<Iterator, fasta_record(), Skipper> {
+    template <typename Iterator>
+    struct fasta_parser : qi::grammar< Iterator, FastaVector() > {
         
-        fasta_parser() : fasta_parser::base_type(record) {
+        fasta_parser() : fasta_parser::base_type(fasta) {
             using ascii::char_;
+            using qi::skip;
             using qi::lit;
 
-            // The FASTA header
-            header %= qi::lexeme[*(char_ - '\n')];
-            sequence %= +(+char_(DNA_SYMBOLS)) >> *lit('\n') >> *char_(DNA_SYMBOLS);
-
-            record %= '>'
-                >> header
+            record = ( '>' >> *~char_('\n')
                 >> '\n'
-                >> sequence
-                >> -lit('\n');
+                >> skip(ascii::space)[+char_(DNA_SYMBOLS)] );
 
-            //fasta %= *record;
+            fasta = *record >> qi::eoi;
+            
+            BOOST_SPIRIT_DEBUG_NODES((fasta)(record));
         }
 
-        qi::rule<Iterator, std::string()> header;
-        qi::rule<Iterator, std::string(), Skipper> sequence;
-        qi::rule<Iterator, fasta_record(), Skipper> record;
-        //qi::rule<Iterator, std::vector<fasta_record>, ascii::space_type> fasta;
+        qi::rule<Iterator, FastaRecord() > record;
+        qi::rule<Iterator, FastaVector() > fasta;
     };
 }
 
 int main() {
     using namespace barf;
-    const std::string input = ">a test fasta record\nATTTGCTGGAAAGCTCGAGCAATGC\n";
+    std::string input = ">a test fasta record\nATTTGCTGGAA\nAGCTCGAGCAATGC\n>test 2\nATCGGTAGGCTGA";
     
-    fasta_record data;
+    typedef std::string::iterator iterator_type;
+    typedef fasta_parser<iterator_type> parser;
 
-    typedef std::string::const_iterator iterator_type;
-    typedef fasta_parser<iterator_type, qi::blank_type> parser;
-
+    FastaVector data;
     iterator_type iter = input.begin();
     iterator_type end = input.end();
     parser g; // Our grammar
 
     bool ok = qi::phrase_parse(iter, end, g, qi::blank, data);
-    if (ok) std::cout << "success\n";
-    else std::cout << "failed\n";
+
+    std::cout << "original:\n" << input << std::endl << "*****" << std::endl;
+    if (ok) {
+        std::cout << "success (" << data.size() << " records)\n";
+        for (auto i = data.begin(); i != data.end(); ++i) {
+            std::cout << i->second << std::endl;
+        }
+    } else std::cout << "failed\n";
 
     if (iter != end)
         std::cout << "Remaining unparsed: '" << std::string(iter,end) << "'\n";
