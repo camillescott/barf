@@ -1,4 +1,4 @@
-#define BOOST_SPIRIT_DEBUG
+//#define BOOST_SPIRIT_DEBUG
 #include <iostream>
 #include <string>
 #include <vector>
@@ -26,7 +26,7 @@ namespace barf {
 
             fasta = *record >> qi::eoi;
             
-            BOOST_SPIRIT_DEBUG_NODES((fasta)(record));
+            //BOOST_SPIRIT_DEBUG_NODES((fasta)(record));
         }
 
         qi::rule<Iterator, FastaRecord() > record;
@@ -36,27 +36,25 @@ namespace barf {
 
 int main() {
     using namespace barf;
-    std::string input = ">a test fasta record\nATTTGCTGGAA\nAGCTCGAGCAATGC\n>test 2\nATCGGTAGGCTGA";
-    
-    typedef std::string::iterator iterator_type;
-    typedef fasta_parser<iterator_type> parser;
+
+    typedef boost::spirit::istream_iterator IteratorType;
+    std::cin.unsetf(std::ios::skipws);
+    IteratorType it(std::cin), end;
+ 
+    typedef fasta_parser<IteratorType> parser;
 
     FastaVector data;
-    iterator_type iter = input.begin();
-    iterator_type end = input.end();
-    parser g; // Our grammar
+    parser g;
 
-    bool ok = qi::phrase_parse(iter, end, g, qi::blank, data);
-
-    std::cout << "original:\n" << input << std::endl << "*****" << std::endl;
-    if (ok) {
-        std::cout << "success (" << data.size() << " records)\n";
-        for (auto i = data.begin(); i != data.end(); ++i) {
-            std::cout << i->second << std::endl;
+    if (qi::phrase_parse(it, end, g, qi::blank, data)) {
+        BOOST_FOREACH(FastaRecord const& record, data) {
+            std::cout << ">" << record.first << std::endl << record.second << std::endl;
         }
-    } else std::cout << "failed\n";
-
-    if (iter != end)
-        std::cout << "Remaining unparsed: '" << std::string(iter,end) << "'\n";
+    }
+    else {
+        std::cerr << "FAIL" << std::endl;
+        exit(1);
+    }
+    return 0;
 }
 

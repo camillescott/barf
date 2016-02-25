@@ -8,6 +8,7 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/fusion/include/io.hpp>
 #include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/support_istream_iterator.hpp>
 
 namespace barf {
 
@@ -15,7 +16,7 @@ namespace barf {
     namespace ascii = boost::spirit::ascii;
     namespace phoenix = boost::phoenix;
 
-    char * DNA_SYMBOLS = "actgACTG";
+    char * DNA_SYMBOLS = "actgnACTGN";
 }
 
 #endif
