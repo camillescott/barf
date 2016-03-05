@@ -47,4 +47,8 @@ The next week will will revolve around formally defining the validation mini-lan
 and getting out a rudimentary prototype. After that, I will focus on expanding its
 compatibility to a few more formats and writing up the results.
 
+The project code can be found on [github](https://github.com/camillescott/barf). The silly
+name is the result of a lab meeting where we discussed the potential of the program, and clearly,
+we're an odd bunch.
+
 ## References
