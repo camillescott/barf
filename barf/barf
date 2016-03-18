@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
+import argparse
+from contextlib import contextmanager
+import os
+import subprocess
+import sys
+import shutil
+import tempfile
+import threading
+import time
+
+from fasta import FastaRecordModel
+from fasta import parser as fastaParser
+from fasta import writer as fastaWriter
+
+from collectionmodel import CollectionModel
+from sequencemodel import models as sequenceModels
+
+@contextmanager
+def TempNamedPipe(quiet=False):
+    dirname = tempfile.mkdtemp()
+    try:
+        path = os.path.join(dirname, 'named_pipe')
+        os.mkfifo(path)
+        if not quiet:
+            print('FIFO constructed at {0}'.format(path), file=sys.stderr)
+        yield path
+    finally:
+        shutil.rmtree(dirname)
+        if not quiet:
+            print('FIFO destroyed at {0}'.format(path), file=sys.stderr)
+
+
+def handle_input(input_handle, fifo, recordModel, collection, parser=fastaParser):
+    with open(fifo, 'wb', 0) as fp:
+        for record in parser(input_handle):
+            # do validation
+            record = recordModel(record.name, record.sequence)
+            collection.add(record.sequence)
+            fp.write(fastaWriter(record))
+
+
+def handle_cmd(args, fifo, output_handle, recordModel, collection, parser=fastaParser):
+    with open(fifo, 'rb', 0) as fp:
+        proc = subprocess.Popen(args, stdin=fp, stdout=subprocess.PIPE,
+                close_fds=True)
+        for record in parser(proc.stdout):
+            record = recordModel(record.name, record.sequence)
+            collection.checkIn(record.sequence)
+            output_handle.write(fastaWriter(record))
+
+
+def main():
+    parser = argparse.ArgumentParser('barf')
+    parser.add_argument('--sequence-model', choices=sequenceModels.keys(),
+                        default='DNA')
+    parser.add_argument('-i', '--input', 
+                        type=argparse.FileType('rb'),
+                        default=sys.stdin)
+    parser.add_argument('-o', '--output', 
+                        type=argparse.FileType('wb'),
+                        default=sys.stdout)
+    args, command_args = parser.parse_known_args()
+
+    parser = fastaParser
+    writer = fastaWriter
+    fastaSequenceModel = sequenceModels[args.sequence_model]
+    fastaRecordModel = FastaRecordModel(fastaSequenceModel)
+    collection = CollectionModel(fastaSequenceModel)
+
+    with TempNamedPipe() as fifo_path:
+        try:
+            input_thread = threading.Thread(target=handle_input, 
+                                        args=(args.input, 
+                                              fifo_path,
+                                              fastaRecordModel,
+                                              collection))
+            input_thread.start()
+
+            cmd_thread = threading.Thread(target=handle_cmd, 
+                                      args=(command_args, 
+                                            fifo_path, 
+                                            args.output,
+                                            fastaRecordModel,
+                                            collection))
+            cmd_thread.start()
+        except Exception: # so hacky
+            cmd_thread.join()
+            input_thread.join()
+        cmd_thread.join()
+        input_thread.join()
+
+
+if __name__ == '__main__':
+    main()
