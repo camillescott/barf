@@ -5,11 +5,12 @@ import string
 class SequenceModel(object):
 
     def __init__(self, alphabet, flags=re.IGNORECASE):
+        self.alphabet = alphabet
         self.pattern = re.compile(r'[{alphabet}]*$'.format(alphabet=alphabet),
                                   flags=flags)
 
     def __str__(self):
-        return 'SequenceModel<{0}>'.format(self.pattern)
+        return 'SequenceModel<{0}>'.format(self.alphabet)
 
     def checkValid(self, data):
         if self.pattern.match(data) is None:

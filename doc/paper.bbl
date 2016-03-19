@@ -1,0 +1,33 @@
+\begin{thebibliography}{1}
+
+\bibitem{bolger_trimmomatic:_2014}
+A.~M. Bolger, M.~Lohse, and B.~Usadel, ``Trimmomatic: a flexible trimmer for
+  {Illumina} sequence data,'' {\em Bioinformatics}, p.~btu170, 2014.
+
+\bibitem{crusoe_khmer_2014}
+M.~R. Crusoe, G.~Edvenson, J.~Fish, A.~Howe, E.~McDonald, J.~Nahum, K.~Nanlohy,
+  H.~Ortiz-Zuazaga, J.~Pell, J.~Simpson, and {others}, ``The khmer software
+  package: enabling efficient sequence analysis,'' {\em URL http://dx. doi.
+  org/10.6084/m9. figshare}, vol.~979190, 2014.
+
+\bibitem{gray_why_1986}
+J.~Gray, ``Why do computers stop and what can be done about it?,'' in {\em
+  Symposium on reliability in distributed software and database systems},
+  pp.~3--12, Los Angeles, CA, USA, 1986.
+
+\bibitem{lipman_rapid_1985}
+D.~Lipman and W.~Pearson, ``Rapid and sensitive protein similarity searches,''
+  {\em Science}, vol.~227, pp.~1435--1441, Mar. 1985.
+
+\bibitem{chikhi_space-efficient_2013}
+R.~Chikhi and G.~Rizk, ``Space-efficient and exact de {Bruijn} graph
+  representation based on a {Bloom} filter,'' {\em Algorithms for Molecular
+  Biology}, vol.~8, no.~1, p.~1, 2013.
+
+\bibitem{pell_scaling_2012}
+J.~Pell, A.~Hintze, R.~Canino-Koning, A.~Howe, J.~M. Tiedje, and C.~T. Brown,
+  ``Scaling metagenome sequence assembly with probabilistic de {Bruijn}
+  graphs,'' {\em Proceedings of the National Academy of Sciences}, vol.~109,
+  no.~33, pp.~13272--13277, 2012.
+
+\end{thebibliography}

@@ -1,0 +1,251 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+% This is a simple template for a LaTeX document using the "article" class.
+% See "book", "report", "letter" for other types of document.
+
+\documentclass[12pt]{article} % use larger type; default would be 10pt
+
+\usepackage[utf8]{inputenc}
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+
+\usepackage{graphicx} % support the \includegraphics command and options
+
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{fullpage}
+\usepackage{amsmath,amsfonts,amssymb,proof}
+\usepackage{url,hyperref}
+\usepackage{wasysym}
+
+\usepackage[boxed,commentsnumbered]{algorithm2e}
+\usepackage[numbers]{natbib}
+
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+% These packages are all incorporated in the memoir class to one degree or another...
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+
+\newcommand{\quotes}[1]{``#1''}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textit{barf}: a drop-in bioinformatics file format validator}
+\author{Camille Scott}
+
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The growth of high-throughput DNA sequencing has necessitated that biologists 
+embrace computing as an integral part of their work, and resulted in software being
+an import tool for basic biology. Studies often rely on
+complex pipelines to transform and filter these data, which is frequently passed through
+numerous bioinformatics applications. With so much software involved, the odds
+of faulty data being introduced are high; worse, that software is often written and
+maintained by academic labs with limited resources for software engineering
+or verification and validation. While biological meaning is difficult to verify and highly application-specific, verifying
+data integrity is tractable and understood. The resources
+to formally verify so much scientific software do not exist; however, if simple
+tools existed for checking integrity, it is likely researchers would use them. To that end,
+we introduce \emph{barf}, a prototype for a drop-in bioinformatics validator which
+operates via UNIX pipes: upon encountering erroneous data, it \quotes{barfs}, 
+stopping the pipeline and alerting the user. 
+\end{abstract}
+
+\section{Introduction}
+
+To motivate this approach, let us begin with a couple real-life scenarios the author
+has encountered. We start with \quotes{L}, a new graduate student with a background
+in bench biology who has been diving deeper into bioinformatics as a part of her
+PhD research. \quotes{L} is assembling a genome, and her analysis pipeline includes
+the widely-used program Trimmomatic \citep{bolger_trimmomatic:_2014} to remove
+low-quality sequences. Some days later, when the pipeline has completed, she starts
+to look more closely at her results, and realizes that one of the sequence files output
+by Trimmomatic is truncated: the FASTQ formatted file ends part-way through a 
+DNA sequence, and includes no quality score. This does not trigger a failure until
+a few steps down the pipeline, when another program mysteriously crashes. As it turns
+out, Trimmomatic occasionally fails due to some unpredictable error which cannot be
+reproduced, and instead of returning an error code, returns $0$ and truncates
+its output. Had the program behaved more appropriately, \quotes{L} would have
+identified the problem early-on and saved significant time.
+
+Next up, we consider a hypothetical researcher using the software khmer
+\citep{crusoe_khmer_2014}. khmer provides a utility for filtering sequences based
+on their redundancy in a de Bruijn graph, and this utility is now commonly used as a
+preprocessing step prior to genome assembly. Unfortunately, like most scientific
+software, it sometimes misbehaves: for example, when it encounters an $N$ in a 
+sequence (the accepted way of representing an uncertain nucleotide), it simply replaces
+it with an $A$ to avoid the performance hit associated with increasing the alphabet
+of its hash function from four ($\{A,C,G,T\}$) to five ($\{A,C,G,T,N\}$). While this
+is documented, it is not immediately clear to the user, and some downstream analyses,
+such as measurement of \emph{GC}-content, could be affected. 
+
+Both of these cases might seem mundane, or even avoidable; \quotes{L} could
+report the bug to the developers, or even submit a patch, and the khmer team 
+could make its sequence mutations more obvious by providing a warning message. 
+The problem, of course, is
+that such solutions don't scale: soon enough, \quotes{L} is acting as a QA tester
+for two dozen different bioinformatics labs, and her research suffers. Further, there
+are countless bugs which undoubtedly go unnoticed, or are only intermittent, the
+so-called Heisenbugs \citep{gray_why_1986}. Another solution is to simply
+expect that labs spend the time to formally verify their software; this would be ideal,
+but the land of academic software is rarely ideal, and prescriptive solutions require
+that the patient take their medicine.
+
+Instead, we offer a more tractable solution: provide researchers with simple utilities
+for data verification, and make it easy to include them in their pipelines. A key part
+of this approach is to rely on the KISS principle: tools with limited scope are more
+likely to actually work. \emph{barf} results from these goals, a serves as an example
+of what a more complete utility might look like. The current implementation operates
+on the FASTA format, a simple but ill-defined format which provides an appropriate
+test-bed. Originally developed for early aligner of the same name
+\citep{lipman_rapid_1985}, it is now ubiquitous in the field. FASTA is a plain-text
+format which can be described by the following Backus-Naur grammar, provided
+by the \href{https://github.com/bioboxes/rfc/blob/master/data-format/sequence.mkd}{bioboxes project}:
+
+\begin{center}
+\begin{verbatim}
+<file>     ::= <token> | <token> <file>
+<token>    ::= <ignore> | <seq>
+<ignore>   ::= <whitespace> | <comment> <newline>
+<seq>      ::= <header> <molecule> <newline>
+<header>   ::= ">" <arbitrary text> <newline>
+<molecule> ::= <mol-line> | <mol-line> <molecule>
+<mol-line> ::= <nucl-line> | <prot-line>
+<nucl-line>::= "^[ACGTURYKMSWBDHVNX-]+$"
+<prot-line>::= "^[ABCDEFGHIKLMNOPQRSTUVWYZX*-]+$"
+\end{verbatim}
+\end{center}
+
+Plainly, a FASTA record starts a description line, which starts with a $>$ character
+and contains free text, followed by a line break, followed by a sequence line
+of either nucleotide or protein codes as specified by IUPAC. Many programs will
+hard-wrap the sequence line, which the above BNF grammar captures, but such
+behavior was not originally defined in the format. An entire ecosystem of alternative
+formulations exists, many specifying a format for the header line, but the standards
+are ad-hoc, leading to a multiple of practical issues with the format.
+
+\section{Approach}
+
+The main function of this tool is quite simple: intercept input streaming to a program
+via standard input; validate it and send it to the program; allow the program to operate
+as normal; intercept the data again on standard out; and verify it before sending it to
+the disk (or the next stage in the pipeline). Correctly verifying the data is then key.
+
+\subsubsection{Limited Data Models}
+
+The approach for the FASTA format is to define a simple data model for a record.
+While we considered using a formal grammar early on, such as BNF or extended BNF,
+these methods turned out to be more verbose and unwieldy than was necessary: 
+they are often aimed at parsing, rather than validating. Our utility should give
+some reason for why a parse fails, and in that manner, approaches the class
+of assertion languages. Instead, our approach is to assign data types to
+fields in the record of interest, and further describe properties of collections of those
+records.
+
+The FASTA header is a string type, with the alphabet of all printable ASCII characters.
+The sequence is a string type with an alphabet limited to the IUPAC codes. These 
+are well-defined via regex; in this view, the FASTA record is simple a tuple of two
+strings, which themselves are constrained by some parameters. We don't worry about
+parsing the format, per se, instead focusing on verifying that the data itself is valid.
+We rely on third-party parsers, which work well, but often do not constrain their data
+fields.
+
+\subsubsection{Scalable Collections}
+
+The above naive method would catch simple errors like proteins being mixed with 
+DNA sequences: the user would simple specify that we validate the sequence field with
+the DNA grammar, and we would fail when encountering a protein. However, it does not
+catch the khmer error, and might not catch the Trimmomatic error in some cases.
+We need a concept of a collection for that -- many of these errors, including both
+our examples, can be caught by simply checking whether the output is a subset of
+the input. An obvious way is to just track hashes, but this does not scale.
+
+Instead, we turn to one of the bread-and-butter methods for dealing with sets
+in streaming applications, the Bloom Filter. Bloom filters are probabilistic data structures
+which track set membership in fixed-memory with a tunable false-positive rate; they
+have found great utility in genomics applications for a variety of operations on 
+sequences \citep{chikhi_space-efficient_2013}\citep{pell_scaling_2012}. We use
+a bloom filter (BF) to track what data has entered a program, and then assert that the 
+data leaving the program is a subset of that which entered by querying against the BF. 
+By attaching our data models to the bloom filter, we essentially type it, and both
+validate individual records for correctness and the data set as a whole.
+
+\section{Implementation}
+
+The \emph{barf} prototype is implemented in Python, and uses the 
+\href{https://github.com/dib-lab/screed}{screed package} for basic FASTA parsing.
+screed is maintained by my lab, and is used in a lot of our software and that of
+several other groups. The data models are implemented with simple native Python
+libraries: each data model is a regex from the \texttt{re} module, wrapped
+in a Python object with a \texttt{checkValid} method; when the check fails, we
+raise an \texttt{AssertionError} with the offending data. The \href{https://github.com/jaybaird/python-bloomfilter}{pybloom package}
+provides the bloom filter; it is wrapped on a class in the same manner as the data 
+models, with a check function raising an \texttt{AssertionError} on failure. Finally, there
+is a model for a \texttt{FastaRecord}, which is a \texttt{namedtuple}; the user
+selects a data model for the sequence on invocation, and a factory function produces
+a \texttt{FastaRecord} model as appropriate.
+
+A typical invocation would take the form:
+
+\begin{center}
+\code{cat in.fasta | ./barf --sequence-model IUPAC analyze-prog > out.fasta}.
+\end{center}
+
+This is modeled after the GNU \texttt{time} command: it takes the target program
+as input and forks to run it. In this implementation though, the process management
+is slightly more complex, because we need to intercept \texttt{STDIN} and
+\texttt{STDOUT}. It first creates a temporary \texttt{FIFO} pipe, and then spawns
+two processes. The first reads \texttt{STDIN} and validates the data, then pushes it
+to the \texttt{FIFO} pipe. The second uses \texttt{subprocess} to run the command,
+which is given the \texttt{FIFO} as its \texttt{STDIN}; the host process monitors
+the command's \texttt{STDOUT}, validates the data, and finally writes the results
+to \emph{barf}'s \texttt{STDOUT}.
+
+Several test cases are provided with this document. In one, the input contains an
+invalided DNA sequence. The program will crash with:
+
+\begin{center}
+\code{AssertionError: SequenceModel<ACGT> failed to match "FASTALINEWITHBADTHINGS"}
+\end{center}
+
+In another, an analysis program \texttt{fraudster} inserts a new sequence into the
+output. This time, the collection validator catches the error, and we get:
+
+\begin{center}
+\code{AssertionError: ATGGG not in input collection!}
+\end{center}
+
+\section{Related Work}
+
+Verifying data is nothing new; indeed, it has been a subject of basic engineering
+interest since computing was born. 
+
+\section{Conclusions}
+
+\bibliographystyle{ieeetr}
+\setcitestyle{numbers, open={[},close={]}}
+\bibliography{barf}
+
+\end{document}
