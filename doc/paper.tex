@@ -240,9 +240,54 @@ output. This time, the collection validator catches the error, and we get:
 \section{Related Work}
 
 Verifying data is nothing new; indeed, it has been a subject of basic engineering
-interest since computing was born. 
+interest since computing was born. Basic approaches to parsing and validation
+have been formally encapsulated through grammars like BNF and EBNF; some 
+existing implementations of these are found in \texttt{yacc} \citep{mason_lex_1990},
+\texttt{bison} \citep{_bison_1988}, and Boost Spirit \citep{de_guzman_boost_2009},
+while the formal underpinnings for BNF can be traced thousands of years, with EBNF
+being described more recently \cite{scowen_extended_1998}. While this work is
+closely related, it focuses on parsing entire files, like source listings; further, these
+grammars tend to be parsed with recursive descent parsers in practice, which are
+not well-suited for streaming applications. The focus on streaming often limits us
+to hand-written parsers over formal grammars, which is why \emph{barf} uses 
+abstractions for its data fields instead of focusing on the actual parsing.
+
+The Data Format Description Language (DFDL) \citep{michael_j_beckerle_data_2014}
+is an attempt to formally define a language for data exchange: it uses an XML
+schema to describe data fields, formatting, and semantics of data in a system-agnostic
+way. This seems perfect for us at first, but the specification alone is over 250 pages
+long, which very much breaks our goal of sticking to KISS. More robust infrastructure
+would do well to adopt such standards, but \emph{barf} is aimed at end-users,
+ordinary researchers who are rarely trained in engineering, and getting them to adopt
+a new tool requires simplicity.
+
+While this work could fall directly in line with basic formal verification techniques, these
+fail to suit because we do not have a two-sided arrangement: we aim to verify some
+unknown software's outputs, and there are no contracts with that software. Further,
+we don't have access to the software's source, so assertion languages like 
+A \citep{tjang_:_2006} also fail to meet our needs; we cannot recompile these
+programs on the fly. As such, we are forced to settle for a more ad-hoc approach,
+first accepting that a program is \emph{attempting} to output data of a particular
+format, and then doing our best to validate under that assumption.
 
 \section{Conclusions}
+
+We have described \emph{barf}, a drop-in utility for validating FASTA formatted files
+in a streaming manner. Our utility can act as an example for how such a system might
+be implemented for other formats; it adopts a semi-formal approach to data validation,
+focusing on data fields rather than structure, and allows for a simple assertion on
+the output of data being a subset of the input. 
+
+Future work on this project will involve better formalizing the data field specification 
+language. It will also need to support more formats; we might make use of Biopython
+\citep{cock_biopython:_2009} to quickly add many formats, but we will likely
+need to switch to something more performant. Ragel \citep{_ragel_2014} has already
+been shown to be effective for this task by the Biojulia \cite{_bio.jl_2016} project,
+and cooperation with that team could yield fruit; this would likely involve
+switching the implementation from Python to C/C++, as Python is likely prohibitively
+slow for integration with real pipelines. Expanding \emph{barf} to be a useful tool
+in the box of bioinformaticians will be an ongoing project of the author's home lab,
+the Lab for Data Intensive Biology.
 
 \bibliographystyle{ieeetr}
 \setcitestyle{numbers, open={[},close={]}}

@@ -1,4 +1,4 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{bolger_trimmomatic:_2014}
 A.~M. Bolger, M.~Lohse, and B.~Usadel, ``Trimmomatic: a flexible trimmer for
@@ -29,5 +29,43 @@ J.~Pell, A.~Hintze, R.~Canino-Koning, A.~Howe, J.~M. Tiedje, and C.~T. Brown,
   ``Scaling metagenome sequence assembly with probabilistic de {Bruijn}
   graphs,'' {\em Proceedings of the National Academy of Sciences}, vol.~109,
   no.~33, pp.~13272--13277, 2012.
+
+\bibitem{mason_lex_1990}
+T.~Mason and D.~Brown, {\em Lex \&{Amp}; {Yacc}}.
+\newblock Sebastopol, CA, USA: O'Reilly \& Associates, Inc., 1990.
+
+\bibitem{_bison_1988}
+``Bison,'' 1988.
+
+\bibitem{de_guzman_boost_2009}
+J.~de~Guzman and H.~Kaiser, ``Boost {Spirit},'' 2009.
+
+\bibitem{scowen_extended_1998}
+R.~S. Scowen, ``Extended {BNF}-a generic base standard,'' tech. rep., Technical
+  report, ISO/IEC 14977. http://www. cl. cam. ac. uk/mgk25/iso-14977. pdf,
+  1998.
+
+\bibitem{michael_j_beckerle_data_2014}
+S.~M.~H. Michael J~Beckerle, ``Data {Format} {Description} {Language} ({DFDL})
+  v1.0 {Specification},'' tech. rep., IBM, Sept. 2014.
+
+\bibitem{tjang_:_2006}
+A.~Tjang, F.~Oliveira, R.~P. Martin, and T.~D. Nguyen, ``A: an assertion
+  language for distributed systems,'' in {\em Proceedings of the 3rd workshop
+  on {Programming} languages and operating systems: linguistic support for
+  modern operating systems}, p.~8, ACM, 2006.
+
+\bibitem{cock_biopython:_2009}
+P.~J.~A. Cock, T.~Antao, J.~T. Chang, B.~A. Chapman, C.~J. Cox, A.~Dalke,
+  I.~Friedberg, T.~Hamelryck, F.~Kauff, B.~Wilczynski, and M.~J.~L. de~Hoon,
+  ``Biopython: freely available {Python} tools for computational molecular
+  biology and bioinformatics,'' {\em Bioinformatics}, vol.~25, pp.~1422--1423,
+  June 2009.
+
+\bibitem{_ragel_2014}
+``Ragel,'' Oct. 2014.
+
+\bibitem{_bio.jl_2016}
+``bio.jl,'' Jan. 2016.
 
 \end{thebibliography}

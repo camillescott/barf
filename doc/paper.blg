@@ -3,44 +3,44 @@ Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: paper.aux
 The style file: ieeetr.bst
 Database file #1: barf.bib
-You've used 6 entries,
+You've used 15 entries,
             1876 wiz_defined-function locations,
-            517 strings with 4699 characters,
-and the built_in function-call counts, 1869 in all, are:
-= -- 179
-> -- 86
+            558 strings with 5864 characters,
+and the built_in function-call counts, 3434 in all, are:
+= -- 315
+> -- 162
 < -- 0
-+ -- 31
-- -- 25
-* -- 138
-:= -- 272
-add.period$ -- 6
-call.type$ -- 6
-change.case$ -- 6
++ -- 61
+- -- 46
+* -- 241
+:= -- 499
+add.period$ -- 16
+call.type$ -- 15
+change.case$ -- 16
 chr.to.int$ -- 0
-cite$ -- 6
-duplicate$ -- 97
-empty$ -- 160
-format.name$ -- 25
-if$ -- 449
+cite$ -- 15
+duplicate$ -- 167
+empty$ -- 333
+format.name$ -- 46
+if$ -- 831
 int.to.chr$ -- 0
-int.to.str$ -- 6
-missing$ -- 6
-newline$ -- 21
-num.names$ -- 6
-pop$ -- 17
+int.to.str$ -- 15
+missing$ -- 10
+newline$ -- 49
+num.names$ -- 12
+pop$ -- 66
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 73
+skip$ -- 116
 stack$ -- 0
-substring$ -- 121
-swap$ -- 46
+substring$ -- 163
+swap$ -- 61
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
 warning$ -- 0
-while$ -- 17
-width$ -- 7
-write$ -- 62
+while$ -- 27
+width$ -- 17
+write$ -- 134
